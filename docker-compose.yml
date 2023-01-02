@@ -15,28 +15,28 @@ services:
       - "5432:5432"
 
   gateway:
-    build: lab2/Gateway/
+    build: lab3/Gateway/
     container_name: gateway
     restart: on-failure
     ports:
       - "8080:8080"
 
   flight:
-    build: lab2/Flights/
+    build: lab3/Flights/
     container_name: flight
     restart: on-failure
     ports:
       - "8060:8060"
       
   ticket:
-    build: lab2/Tickets/
+    build: lab3/Tickets/
     container_name: ticket
     restart: on-failure
     ports:
       - "8070:8070"
 
   bonus:
-    build: lab2/Bonuses/
+    build: lab3/Bonuses/
     container_name: bonus
     restart: on-failure
     ports:

@@ -10,8 +10,7 @@ class Data_Base:
         self.connection = psycopg2.connect(dbname = "postgres",
                                            user = "program",
                                            password = "test",
-                                           host = "postgres")
-        
+                                           host = "postgres")   
     def create_tables(self):
         if not(self.connection):
             self.connect()

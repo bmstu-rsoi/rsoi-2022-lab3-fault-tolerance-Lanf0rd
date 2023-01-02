@@ -14,7 +14,6 @@ class Data_Base:
                                            host = "postgres")
 
 
-
     def create_tables(self):
         if not(self.connection):
             self.connect()

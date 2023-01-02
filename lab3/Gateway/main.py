@@ -2,6 +2,8 @@ import flask
 from flask import request, Response
 import requests
 
+
+
 class Server:
     def __init__(self, host, port, tickets_port, flights_port, bonuses_port):
         self.host = host
@@ -9,6 +11,11 @@ class Server:
         self.Tickets = tickets_port
         self.Flights = flights_port
         self.Bonuses = bonuses_port
+
+        self.ticketsURL = "http://ticket:"
+        self.flightsURL = "http://flight:"
+        self.bonusURL = "http://bonus:"
+
         self.app = flask.Flask(__name__)
 
         self.app.add_url_rule("/manage/health", view_func = self.get_say_ok)
@@ -28,17 +35,22 @@ class Server:
     def get_flights(self):
         param_page = request.args.get("page", default = 0, type = int)
         param_size = request.args.get("size", default = 0, type = int)
-        url = "http://flight:" + str(self.Flights) + "/api/v1/flights"
+        
+        url = self.flightsURL + str(self.Flights) + "/api/v1/flights"
 
-        response = requests.get(url, params = {"page": param_page, "size": param_size})
-        if response.status_code != 200:
-            return Response(status = 404)
-        return response.json()
+        try:
+            response = requests.get(url, params = {"page": param_page, "size": param_size})
+            if response.status_code != 200:
+                return Response(status = 404)
+            return response.json()
+        except:
+            return {"message": "Сервис рейсов на данный момент недоступен"}, 503
+
         
     def get_tickets(self):
         client = request.headers.get("X-User-Name")
-        url1 = "http://ticket:" + str(self.Tickets) + "/api/v1/tickets"
-        url2 = "http://flight:" + str(self.Flights) + "/api/v1/flight_by_number"
+        url1 = self.ticketsURL + str(self.Tickets) + "/api/v1/tickets"
+        url2 = self.flightsURL + str(self.Flights) + "/api/v1/flight_by_number"
 
         response_tickets = requests.get(url1, headers={"X-User-Name": client})
         if response_tickets.status_code != 200:
@@ -59,10 +71,10 @@ class Server:
     def post_tickets(self):
         client = request.headers.get("X-User-Name")
         buy_inf = request.json
-        url1 = "http://flight:" + str(self.Flights) + "/api/v1/flight_by_number"
-        url2 = "http://ticket:" + str(self.Tickets) + "/api/v1/ticket"
-        url3 = "http://bonus:" + str(self.Bonuses) + "/api/v1/buy_by_privilege"
-        url4 = "http://bonus:" + str(self.Bonuses) + "/api/v1/add_privilege"
+        url1 = self.flightsURL + str(self.Flights) + "/api/v1/flight_by_number"
+        url2 = self.ticketsURL + str(self.Tickets) + "/api/v1/ticket"
+        url3 = self.bonusURL + str(self.Bonuses) + "/api/v1/buy_by_privilege"
+        url4 = self.bonusURL + str(self.Bonuses) + "/api/v1/add_privilege"
 
         response_flight = requests.get(url1, headers = {"flight_number": buy_inf["flightNumber"]})
         if response_flight.status_code == 404:
@@ -98,8 +110,8 @@ class Server:
 
     def get_tickets_by_id(self, ticketUid):
         client = request.headers.get("X-User-Name")
-        url1 = "http://ticket:" + str(self.Tickets) + "/api/v1/tickets/" + ticketUid
-        url2 = "http://flight:" + str(self.Flights) + "/api/v1/flight_by_number"
+        url1 = self.ticketsURL + str(self.Tickets) + "/api/v1/tickets/" + ticketUid
+        url2 = self.flightsURL + str(self.Flights) + "/api/v1/flight_by_number"
 
         response_ticket = requests.get(url1, headers={"X-User-Name": client})
         if response_ticket.status_code != 200:
@@ -119,8 +131,8 @@ class Server:
 
     def delete_tickets_by_id(self, ticketUid):
         client = request.headers.get("X-User-Name")
-        url1 = "http://ticket:" + str(self.Tickets) + "/api/v1/tickets/" + ticketUid
-        url2 = "http://bonus:" + str(self.Bonuses) + "/api/v1/privilege/" + ticketUid
+        url1 = self.ticketsURL + str(self.Tickets) + "/api/v1/tickets/" + ticketUid
+        url2 = self.bonusURL + str(self.Bonuses) + "/api/v1/privilege/" + ticketUid
 
         response_delete = requests.delete(url1, headers={"X-User-Name": client})
         if response_delete.status_code != 204:
@@ -138,12 +150,14 @@ class Server:
 
     def get_privelege(self):
         client = request.headers.get("X-User-Name")
-        url = "http://bonus:" + str(self.Bonuses) + "/api/v1/privilege"
-        
-        response = requests.get(url, headers={"X-User-Name": client})
-        if response.status_code == 200:
-            return response.json()
-        return Response(status = 404)
+        url = self.bonusURL + str(self.Bonuses) + "/api/v1/privilege"
+        try:
+            response = requests.get(url, headers={"X-User-Name": client})
+            if response.status_code == 200:
+                return response.json()
+            return Response(status = 404)
+        except:
+            return {"message": "Сервис бонусов на данный момент недоступен"}, 503
 
 
 
