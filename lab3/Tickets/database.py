@@ -13,7 +13,6 @@ class Data_Base:
                                            password = "test",
                                            host = "postgres")
 
-
     def create_tables(self):
         if not(self.connection):
             self.connect()
@@ -44,7 +43,7 @@ class Data_Base:
         cursor = self.connection.cursor()
         response = False
         try:
-            cursor.execute("select ticket_uid, flight_number, status from ticket where username = %s;", (client,))
+            cursor.execute("select ticket_uid, flight_number, status, price from ticket where username = %s;", (client,))
             tickets = cursor.fetchall()
             response = []
 
@@ -53,6 +52,7 @@ class Data_Base:
                 items["ticketUid"] = ticket[0]
                 items["flightNumber"] = ticket[1]
                 items["status"] = ticket[2]
+                items["price"] = ticket[3]
                 response.append(items)            
         except:
             self.connection.rollback()
@@ -67,13 +67,14 @@ class Data_Base:
         cursor = self.connection.cursor()
         response = False
         try:
-            cursor.execute("select ticket_uid, flight_number, status from ticket where username = %s and ticket_uid = %s;", (client, ticketUid))
+            cursor.execute("select ticket_uid, flight_number, status, price from ticket where username = %s and ticket_uid = %s;", (client, ticketUid))
             ticket = cursor.fetchall()[0]
             if ticket[0]:
                 response = dict()
                 response["ticketUid"] = ticket[0]
                 response["flightNumber"] = ticket[1]
-                response["status"] = ticket[2]    
+                response["status"] = ticket[2]
+                response["price"] = ticket[3]
         except:
             self.connection.rollback()
         cursor.close()

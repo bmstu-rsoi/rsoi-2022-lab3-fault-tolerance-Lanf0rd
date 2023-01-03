@@ -1,6 +1,7 @@
 import flask
 from flask import request, Response
 import requests
+import time
 
 
 
@@ -15,6 +16,8 @@ class Server:
         self.ticketsURL = "http://ticket:"
         self.flightsURL = "http://flight:"
         self.bonusURL = "http://bonus:"
+
+        self.repeats_amount = 1
 
         self.app = flask.Flask(__name__)
 
@@ -37,35 +40,56 @@ class Server:
         param_size = request.args.get("size", default = 0, type = int)
         
         url = self.flightsURL + str(self.Flights) + "/api/v1/flights"
-
-        try:
-            response = requests.get(url, params = {"page": param_page, "size": param_size})
-            if response.status_code != 200:
-                return Response(status = 404)
-            return response.json()
-        except:
-            return {"message": "Сервис рейсов на данный момент недоступен"}, 503
+        
+        for i in range(self.repeats_amount):
+            try:
+                response = requests.get(url, params = {"page": param_page, "size": param_size})
+                if response.status_code != 200:
+                    return Response(status = 404)
+                return response.json()
+            except:
+                time.sleep(2)
+        return {"message": "Сервис рейсов на данный момент недоступен"}, 503
 
         
     def get_tickets(self):
         client = request.headers.get("X-User-Name")
         url1 = self.ticketsURL + str(self.Tickets) + "/api/v1/tickets"
         url2 = self.flightsURL + str(self.Flights) + "/api/v1/flight_by_number"
+        flag = True
 
-        response_tickets = requests.get(url1, headers={"X-User-Name": client})
-        if response_tickets.status_code != 200:
-            return Response(status = 404)
-        response_tickets = response_tickets.json()
+        for i in range(self.repeats_amount):
+            try:
+                response_tickets = requests.get(url1, headers={"X-User-Name": client})
+                if response_tickets.status_code != 200:
+                    return Response(status = 404)
+                response_tickets = response_tickets.json()
+                flag = False
+                break
+            except:
+                time.sleep(2)
+        if flag:
+            return {"message": "Сервис билетов на данный момент недоступен"}, 503
         
+        flag = True
         for ticket in response_tickets:
-            response_flight = requests.get(url2, headers = {"flight_number": ticket["flightNumber"]})
-            if response_flight.status_code != 200:
-                return Response(status = 404)
-            response_flight = response_flight.json()
-            ticket["fromAirport"] = response_flight["fromAirport"]
-            ticket["toAirport"] = response_flight["toAirport"]
-            ticket["date"] = response_flight["date"]
-            ticket["price"] = response_flight["price"]
+            for i in range(self.repeats_amount):
+                try:
+                    response_flight = requests.get(url2, headers = {"flight_number": ticket["flightNumber"]})
+                    if response_flight.status_code != 200:
+                        return Response(status = 404)
+                    response_flight = response_flight.json()
+                    ticket["fromAirport"] = response_flight["fromAirport"]
+                    ticket["toAirport"] = response_flight["toAirport"]
+                    ticket["date"] = response_flight["date"]
+                    flag = False
+                    break
+                except:
+                    time.sleep(2)
+            if flag:
+                ticket["fromAirport"] = ""
+                ticket["toAirport"] = ""
+                ticket["date"] = ""
         return response_tickets
 
     def post_tickets(self):
@@ -112,21 +136,39 @@ class Server:
         client = request.headers.get("X-User-Name")
         url1 = self.ticketsURL + str(self.Tickets) + "/api/v1/tickets/" + ticketUid
         url2 = self.flightsURL + str(self.Flights) + "/api/v1/flight_by_number"
+        flag = True
 
-        response_ticket = requests.get(url1, headers={"X-User-Name": client})
-        if response_ticket.status_code != 200:
-            return Response(status = 404)
-        response_ticket = response_ticket.json()
+        for i in range(self.repeats_amount):
+            try:
+                response_ticket = requests.get(url1, headers={"X-User-Name": client})
+                if response_ticket.status_code != 200:
+                    return Response(status = 404)
+                response_ticket = response_ticket.json()
+                flag = False
+                break
+            except:
+                time.sleep(2)
+        if flag:
+            return {"message": "Сервис билетов на данный момент недоступен"}, 503
+        flag = True
 
-        response_flight = requests.get(url2, headers = {"flight_number": response_ticket["flightNumber"]})
-        if response_flight.status_code != 200:
-            return Response(status = 404)
-        response_flight = response_flight.json()
-        
-        response_ticket["fromAirport"] = response_flight["fromAirport"]
-        response_ticket["toAirport"] = response_flight["toAirport"]
-        response_ticket["date"] = response_flight["date"]
-        response_ticket["price"] = response_flight["price"]
+        for i in range(self.repeats_amount):
+            try:
+                response_flight = requests.get(url2, headers = {"flight_number": response_ticket["flightNumber"]})
+                if response_flight.status_code != 200:
+                    return Response(status = 404)
+                response_flight = response_flight.json()
+                response_ticket["fromAirport"] = response_flight["fromAirport"]
+                response_ticket["toAirport"] = response_flight["toAirport"]
+                response_ticket["date"] = response_flight["date"]
+                flag = False
+                break
+            except:
+                time.sleep(2)
+        if flag:
+            response_ticket["fromAirport"] = ""
+            response_ticket["toAirport"] = ""
+            response_ticket["date"] = ""
         return response_ticket
 
     def delete_tickets_by_id(self, ticketUid):
@@ -151,13 +193,16 @@ class Server:
     def get_privelege(self):
         client = request.headers.get("X-User-Name")
         url = self.bonusURL + str(self.Bonuses) + "/api/v1/privilege"
-        try:
-            response = requests.get(url, headers={"X-User-Name": client})
-            if response.status_code == 200:
-                return response.json()
-            return Response(status = 404)
-        except:
-            return {"message": "Сервис бонусов на данный момент недоступен"}, 503
+
+        for i in range(self.repeats_amount):
+            try:
+                response = requests.get(url, headers={"X-User-Name": client})
+                if response.status_code == 200:
+                    return response.json()
+                return Response(status = 404)
+            except:
+                time.sleep(2)
+        return {"message": "Сервис бонусов на данный момент недоступен"}, 503
 
 
 
