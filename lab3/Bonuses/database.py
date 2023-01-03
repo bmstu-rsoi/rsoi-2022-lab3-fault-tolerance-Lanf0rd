@@ -11,7 +11,7 @@ class Data_Base:
                                            user = "program",
                                            password = "test",
                                            host = "postgres")
-
+                                           
     def create_tables(self):
         if not(self.connection):
             self.connect()
@@ -108,6 +108,7 @@ class Data_Base:
             self.connect()
         cursor = self.connection.cursor()
         response_privelege = False
+        price = int(price)
         try:
             cursor.execute("select id, balance, status from privilege where username = %s;", (client,))
             privilege_data = cursor.fetchall()[0]
@@ -120,7 +121,7 @@ class Data_Base:
             cursor.execute("update privilege set balance = %s where username = %s;", (new_balance, client))
             cursor.execute("insert into privilege_history (privilege_id, ticket_uid, datetime, balance_diff, operation_type) values (%s, %s, %s, %s, %s)",
                                (privilege_data[0], ticket_uid, datetime, balance_diff, "DEBIT_THE_ACCOUNT"))
-            response_privelege = dict(balance = new_balance, status = privilege_data[2])
+            response_privelege = dict(balance = new_balance, status = privilege_data[2], paidByBonuses = balance_diff)
             self.connection.commit()
         except:
             self.connection.rollback()
@@ -180,5 +181,6 @@ class Data_Base:
 '''
 new_tab = Data_Base()
 new_tab.get_tables_data()
+
 new_tab.drop_tables()
 '''

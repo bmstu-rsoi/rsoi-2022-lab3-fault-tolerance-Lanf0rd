@@ -1,7 +1,6 @@
 import psycopg2
 import uuid
 
-
 class Data_Base:
     def __init__(self):
         self.connection = False
@@ -98,6 +97,22 @@ class Data_Base:
         self.connection = False
         return check
 
+    def rollback_ticket(self, client, ticketUid):
+        if not(self.connection):
+            self.connect()
+        cursor = self.connection.cursor()
+        check = False
+        try:
+            cursor.execute("delete from ticket where username = %s and ticket_uid = %s;", (client, ticketUid))
+            self.connection.commit()
+            check = True
+        except:
+            self.connection.rollback()
+        cursor.close()
+        self.connection.close()
+        self.connection = False
+        return check
+
     def create_new_ticket(self, client, flight_number, price):
         if not(self.connection):
             self.connect()
@@ -139,6 +154,7 @@ class Data_Base:
 '''
 new_tab = Data_Base()
 new_tab.get_tables_data()
+
 new_tab.drop_tables()
 '''
 

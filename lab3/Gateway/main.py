@@ -2,7 +2,7 @@ import flask
 from flask import request, Response
 import requests
 import time
-
+import threading
 
 
 class Server:
@@ -17,7 +17,7 @@ class Server:
         self.flightsURL = "http://flight:"
         self.bonusURL = "http://bonus:"
 
-        self.repeats_amount = 1
+        self.repeats_amount = 3
 
         self.app = flask.Flask(__name__)
 
@@ -29,6 +29,10 @@ class Server:
         self.app.add_url_rule("/api/v1/tickets/<ticketUid>", view_func = self.delete_tickets_by_id, methods = ['DELETE'])
         self.app.add_url_rule("/api/v1/me", view_func = self.get_me)
         self.app.add_url_rule("/api/v1/privilege", view_func = self.get_privelege)
+
+        self.queue = []
+        t1 = threading.Thread(target=self.thread_actioner)
+        t1.start()
 
     def run_server(self):
         return self.app.run(host = self.host, port = self.port)
@@ -99,25 +103,55 @@ class Server:
         url2 = self.ticketsURL + str(self.Tickets) + "/api/v1/ticket"
         url3 = self.bonusURL + str(self.Bonuses) + "/api/v1/buy_by_privilege"
         url4 = self.bonusURL + str(self.Bonuses) + "/api/v1/add_privilege"
+        flag = True
 
-        response_flight = requests.get(url1, headers = {"flight_number": buy_inf["flightNumber"]})
-        if response_flight.status_code == 404:
-            return Response(status = 404)
-        response_flight = response_flight.json()
+        for i in range(self.repeats_amount):
+            try:
+                response_flight = requests.get(url1, headers = {"flight_number": buy_inf["flightNumber"]})
+                if response_flight.status_code == 404:
+                    return Response(status = 404)
+                response_flight = response_flight.json()
+                flag = False
+                break
+            except:
+                time.sleep(2)
+        if flag:
+            return {"message": "Сервис полетов на данный момент недоступен"}, 503
         
-        ticket_uid = requests.post(url2, headers = {"X-User-Name": client, "flight_number": buy_inf["flightNumber"], "price": str(buy_inf["price"])}).json()
-        ticket_uid = ticket_uid["uid"]
+        flag = True
+        for i in range(self.repeats_amount):
+            try:
+                ticket_uid = requests.post(url2, headers = {"X-User-Name": client, "flight_number": buy_inf["flightNumber"], "price": str(buy_inf["price"])}).json()
+                ticket_uid = ticket_uid["uid"]
+                flag = False
+                break
+            except:
+                time.sleep(2)
+        if flag:
+            return {"message": "Сервис билетов на данный момент недоступен"}, 503
         
         paidByMoney = buy_inf["price"]
         paidByBonuses = 0
 
-        if buy_inf["paidFromBalance"]:
-            response_privelege = requests.post(url3, headers = {"X-User-Name": client, "ticket_uid": ticket_uid, "price": str(buy_inf["price"]), "datetime": response_flight["date"]}).json()
-            paidByBonuses = response_privelege["paidByBonuses"]
-            paidByMoney -= paidByBonuses
-
-        else:
-            response_privelege = requests.post(url4, headers = {"X-User-Name": client, "ticket_uid": ticket_uid, "price": str(buy_inf["price"]), "datetime": response_flight["date"]}).json()
+        flag = True
+        for i in range(self.repeats_amount):
+            try:
+                if buy_inf["paidFromBalance"]:
+                    response_privelege = requests.post(url3, headers = {"X-User-Name": client, "ticket_uid": ticket_uid, "price": str(buy_inf["price"]), "datetime": response_flight["date"]}).json()
+                    paidByBonuses = response_privelege["paidByBonuses"]
+                    paidByMoney -= paidByBonuses
+                else:
+                    response_privelege = requests.post(url4, headers = {"X-User-Name": client, "ticket_uid": ticket_uid, "price": str(buy_inf["price"]), "datetime": response_flight["date"]}).json()
+                flag = False
+                break
+            except:
+                time.sleep(2)
+        if flag:
+            url5 = self.ticketsURL + str(self.Tickets) + "/api/v1/rollback_ticket/" + ticket_uid
+            response_delete = requests.delete(url5, headers={"X-User-Name": client})
+            if response_delete.status_code != 204:
+                return Response(status = 404)
+            return {"message": "Сервис бонусов на данный момент недоступен"}, 503
 
         response = dict()
         response["ticketUid"] = ticket_uid
@@ -175,14 +209,40 @@ class Server:
         client = request.headers.get("X-User-Name")
         url1 = self.ticketsURL + str(self.Tickets) + "/api/v1/tickets/" + ticketUid
         url2 = self.bonusURL + str(self.Bonuses) + "/api/v1/privilege/" + ticketUid
+        flag = True
 
-        response_delete = requests.delete(url1, headers={"X-User-Name": client})
-        if response_delete.status_code != 204:
-            return Response(status = 404)
-        response_delete = requests.delete(url2, headers={"X-User-Name": client})
-        if response_delete.status_code != 204:
-            return Response(status = 404)
+        for i in range(self.repeats_amount):
+            try:
+                response_delete = requests.delete(url1, headers={"X-User-Name": client})
+                if response_delete.status_code != 204:
+                    return Response(status = 404)
+                flag = False
+                break
+            except:
+                time.sleep(2)
+        if flag:
+            return {"message": "Сервис билетов на данный момент недоступен"}, 503
+
+        try:
+            response_delete = requests.delete(url2, headers={"X-User-Name": client})
+            if response_delete.status_code != 204:
+                return Response(status = 404)
+        except:
+            self.queue.append([url2, client])
         return Response(status = 204)
+
+    def thread_actioner(self):
+        queue_length = len(self.queue)
+        if queue_length > 0:
+            queue = self.queue
+            self.queue = []
+            i = 0
+            while i < queue_length:
+                try:
+                    response_delete = requests.delete(queue[i][0], headers={"X-User-Name": queue[i][1]})
+                    i += 1
+                except:
+                    time.sleep(10)
 
     def get_me(self):
         response_tickets = self.get_tickets()

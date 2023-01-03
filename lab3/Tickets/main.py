@@ -12,6 +12,7 @@ class Server:
         self.app.add_url_rule("/api/v1/tickets", view_func = self.get_tickets)
         self.app.add_url_rule("/api/v1/tickets/<ticketUid>", view_func = self.get_tickets_by_id)
         self.app.add_url_rule("/api/v1/tickets/<ticketUid>", view_func = self.delete_tickets_by_id, methods = ['DELETE'])
+        self.app.add_url_rule("/api/v1/rollback_ticket/<ticketUid>", view_func = self.rollback_ticket, methods = ['DELETE'])
         self.app.add_url_rule("/api/v1/ticket", view_func = self.create_new_ticket, methods = ['POST'])
 
     def run_server(self):
@@ -52,6 +53,15 @@ class Server:
         if ticket_uid:
             return {'uid': ticket_uid}
         return Response(status = 404)
+
+    def rollback_ticket(self, ticketUid):
+        client = request.headers.get("X-User-Name")
+        new_db = Data_Base()
+        check = new_db.rollback_ticket(client, ticketUid)
+        if check:
+            return Response(status = 204)
+        return Response(status = 404)
+
 
 
 

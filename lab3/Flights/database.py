@@ -142,6 +142,7 @@ class Data_Base:
 '''
 new_tab = Data_Base()
 new_tab.get_tables_data()
+
 new_tab.drop_tables()
 '''
 
