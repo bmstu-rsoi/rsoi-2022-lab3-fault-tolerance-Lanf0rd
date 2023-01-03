@@ -17,7 +17,7 @@ class Server:
         self.flightsURL = "http://flight:"
         self.bonusURL = "http://bonus:"
 
-        self.repeats_amount = 3
+        self.repeats_amount = 2
 
         self.app = flask.Flask(__name__)
 
@@ -246,7 +246,17 @@ class Server:
 
     def get_me(self):
         response_tickets = self.get_tickets()
+        try:
+            if response_tickets[1] == 503:
+                response_tickets = []
+        except:
+            pass
         response_bonuses = self.get_privelege()
+        try:
+            if response_bonuses[1] == 503:
+                response_bonuses = []
+        except:
+            pass
         response_me = dict(tickets = response_tickets, privilege = response_bonuses)
         return response_me
 
