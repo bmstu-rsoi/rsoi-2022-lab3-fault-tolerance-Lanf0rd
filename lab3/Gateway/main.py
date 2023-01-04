@@ -17,7 +17,7 @@ class Server:
         self.flightsURL = "http://flight:"
         self.bonusURL = "http://bonus:"
         
-        self.repeats_amount = 2
+        self.repeats_amount = 1
 
         self.app = flask.Flask(__name__)
 
@@ -52,7 +52,8 @@ class Server:
                     return Response(status = 404)
                 return response.json()
             except:
-                time.sleep(2)
+                pass
+                ##time.sleep(2)
         return {"message": "Сервис рейсов на данный момент недоступен"}, 503
 
         
@@ -71,7 +72,8 @@ class Server:
                 flag = False
                 break
             except:
-                time.sleep(2)
+                pass
+                ##time.sleep(2)
         if flag:
             return {"message": "Сервис билетов на данный момент недоступен"}, 503
         
@@ -89,7 +91,8 @@ class Server:
                     flag = False
                     break
                 except:
-                    time.sleep(2)
+                    pass
+                    ##time.sleep(2)
             if flag:
                 ticket["fromAirport"] = ""
                 ticket["toAirport"] = ""
@@ -114,7 +117,8 @@ class Server:
                 flag = False
                 break
             except:
-                time.sleep(2)
+                pass
+                ##time.sleep(2)
         if flag:
             return {"message": "Сервис полетов на данный момент недоступен"}, 503
         
@@ -126,7 +130,8 @@ class Server:
                 flag = False
                 break
             except:
-                time.sleep(2)
+                pass
+                ##time.sleep(2)
         if flag:
             return {"message": "Сервис билетов на данный момент недоступен"}, 503
         
@@ -145,13 +150,14 @@ class Server:
                 flag = False
                 break
             except:
-                time.sleep(2)
+                pass
+                ##time.sleep(2)
         if flag:
             url5 = self.ticketsURL + str(self.Tickets) + "/api/v1/rollback_ticket/" + ticket_uid
             response_delete = requests.delete(url5, headers={"X-User-Name": client})
             if response_delete.status_code != 204:
                 return Response(status = 404)
-            return {"message": "Сервис бонусов на данный момент недоступен"}, 503
+            return {"message": "Bonus Service unavailable"}, 503
 
         response = dict()
         response["ticketUid"] = ticket_uid
@@ -181,7 +187,8 @@ class Server:
                 flag = False
                 break
             except:
-                time.sleep(2)
+                pass
+                ##time.sleep(2)
         if flag:
             return {"message": "Сервис билетов на данный момент недоступен"}, 503
         flag = True
@@ -198,7 +205,8 @@ class Server:
                 flag = False
                 break
             except:
-                time.sleep(2)
+                pass
+                ##time.sleep(2)
         if flag:
             response_ticket["fromAirport"] = ""
             response_ticket["toAirport"] = ""
@@ -219,7 +227,8 @@ class Server:
                 flag = False
                 break
             except:
-                time.sleep(2)
+                pass
+                ##time.sleep(2)
         if flag:
             return {"message": "Сервис билетов на данный момент недоступен"}, 503
 
@@ -243,7 +252,7 @@ class Server:
                         response_delete = requests.delete(queue[i][0], headers={"X-User-Name": queue[i][1]})
                         i += 1
                     except:
-                        time.sleep(5)
+                        time.sleep(10)
 
     def get_me(self):
         response_tickets = self.get_tickets()
@@ -272,8 +281,9 @@ class Server:
                     return response.json()
                 return Response(status = 404)
             except:
-                time.sleep(2)
-        return {"message": "Сервис бонусов на данный момент недоступен"}, 503
+                pass
+                ##time.sleep(2)
+        return {"message": "Bonus Service unavailable"}, 503
 
 
 
