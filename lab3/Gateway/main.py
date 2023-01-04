@@ -16,7 +16,7 @@ class Server:
         self.ticketsURL = "http://ticket:"
         self.flightsURL = "http://flight:"
         self.bonusURL = "http://bonus:"
-
+        
         self.repeats_amount = 2
 
         self.app = flask.Flask(__name__)
@@ -232,17 +232,18 @@ class Server:
         return Response(status = 204)
 
     def thread_actioner(self):
-        queue_length = len(self.queue)
-        if queue_length > 0:
-            queue = self.queue
-            self.queue = []
-            i = 0
-            while i < queue_length:
-                try:
-                    response_delete = requests.delete(queue[i][0], headers={"X-User-Name": queue[i][1]})
-                    i += 1
-                except:
-                    time.sleep(10)
+        while True:
+            if len(self.queue) > 0:
+                queue_length = len(self.queue)
+                queue = self.queue
+                self.queue = []
+                i = 0
+                while i < queue_length:
+                    try:
+                        response_delete = requests.delete(queue[i][0], headers={"X-User-Name": queue[i][1]})
+                        i += 1
+                    except:
+                        time.sleep(5)
 
     def get_me(self):
         response_tickets = self.get_tickets()

@@ -83,14 +83,17 @@ class Data_Base:
         try:
             cursor.execute("select id, balance from privilege where username = %s;", (client,))
             privilege_data = cursor.fetchall()[0]
-            cursor.execute("select datetime, balance_diff, operation_type from privilege_history where privilege_id = %s;", (privilege_data[0],))
+            cursor.execute("select datetime, balance_diff, operation_type from privilege_history where privilege_id = %s and ticket_uid = %s;", (privilege_data[0], ticketUid))
             history_data = cursor.fetchall()[0]
+            print(history_data)
             if history_data[2] == 'FILL_IN_BALANCE':
+                print("A")
                 new_balance = max(privilege_data[1] - history_data[1], 0)
                 cursor.execute("update privilege set balance = %s where username = %s;", (new_balance, client))
                 cursor.execute("insert into privilege_history (privilege_id, ticket_uid, datetime, balance_diff, operation_type) values (%s, %s, %s, %s, %s)",
                                (privilege_data[0], ticketUid, history_data[0], history_data[1], "DEBIT_THE_ACCOUNT"))
             else:
+                print("AA")
                 new_balance = privilege_data[1] + history_data[1]
                 cursor.execute("update privilege set balance = %s where username = %s;", (new_balance, client))
                 cursor.execute("insert into privilege_history (privilege_id, ticket_uid, datetime, balance_diff, operation_type) values (%s, %s, %s, %s, %s)",
